@@ -1,0 +1,316 @@
+# Copyright 2025 The HuggingFace Inc. team. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import warnings
+from dataclasses import dataclass, field
+
+from lerobot.configs.policies import PreTrainedConfig
+from lerobot.configs.types import FeatureType, NormalizationMode, PolicyFeature
+from lerobot.optim.optimizers import AdamWConfig
+from lerobot.optim.schedulers import (
+    CosineDecayWithWarmupSchedulerConfig,
+)
+from lerobot.policies.rtc.configuration_rtc import RTCConfig
+from lerobot.utils.constants import OBS_IMAGES
+
+
+@PreTrainedConfig.register_subclass("smolvla")
+@dataclass
+class SmolVLAConfig(PreTrainedConfig):
+    # Input / output structure.
+    n_obs_steps: int = 1
+    chunk_size: int = 32 #50
+    n_action_steps: int = 16 #50
+    # Compatibility fields used by newer checkpoints.  The current model
+    # keeps the legacy inference path for these options, but must be able to
+    # deserialize checkpoints that saved them.
+    action_chunk_start_offset: int = 0
+
+    # Shorter state and action vectors will be padded
+    max_state_dim: int = 10
+    max_action_dim: int = 10
+
+    # Normalization mapping for Flow Matching (required for action normalization)
+    normalization_mapping: dict[str, NormalizationMode] = field(
+        default_factory=lambda: {
+            "VISUAL": NormalizationMode.IDENTITY,
+            "STATE": NormalizationMode.IDENTITY,
+            "ACTION": NormalizationMode.IDENTITY,
+        }
+    )
+
+    # Image preprocessing
+    resize_imgs_with_padding: tuple[int, int] = (512, 512)
+
+    # Point-cloud and RGB camera names are retained for checkpoint
+    # compatibility.  RLBench evaluation may provide the same front camera
+    # under the legacy ``front`` alias.
+    camera_views: str = "agentview"
+    rgb_camera_views: str | None = None
+
+    # Compatibility fields saved by newer multiview training runs.  The
+    # legacy RLBench evaluator does not use these branches, but must accept
+    # their values when loading the checkpoint configuration.
+    camera_view_weights: dict[str, float] | None = None
+    camera_view_fusion: str = "legacy_budget"
+    camera_view_fps_target_points: int = 10000
+    camera_view_fps_gripper_points: int = 500
+    camera_view_voxel_size: float = 0.005
+    multiview_pretrained_lr_multiplier: float = 1.0
+    multiview_residual_lr_multiplier: float = 1.0
+    multiview_input_pretrained_lr_multiplier: float = 1.0
+    multiview_input_point_lr_multiplier: float = 1.0
+    multiview_input_view_dropout_enable: bool = False
+    multiview_input_view_dropout_seed: int = 20260812
+    multiview_input_view_dropout_paired_coverage: bool = False
+
+    # Add empty images. Used by smolvla_aloha_sim which adds the empty
+    # left and right wrist cameras in addition to the top camera.
+    empty_cameras: int = 0
+
+    # Converts the joint and gripper values from the standard Aloha space to
+    # the space used by the pi internal runtime which was used to train the base model.
+    adapt_to_pi_aloha: bool = False
+
+    # Converts joint dimensions to deltas with respect to the current state before passing to the model.
+    # Gripper dimensions will remain in absolute values.
+    use_delta_joint_actions_aloha: bool = False
+
+    # Tokenizer
+    tokenizer_max_length: int = 48
+
+    # Decoding
+    # Number of denoising steps during flow matching inference.
+    # Recommended values: 8-10 (fast), 20-30 (balanced), 50+ (high-quality)
+    num_steps: int = 10
+    flow_time_sampling: str = "beta"
+    flow_time_zero_probability: float = 0.0
+
+    # Attention utils
+    use_cache: bool = True
+
+    # Finetuning settings
+    freeze_vision_encoder: bool = False
+    train_expert_only: bool = False
+    train_state_proj: bool = True
+    # Keep proprioception out of the learned prefix by default. The World-Ego
+    # branch uses current EEF pose only as an analytic coordinate carrier.
+    encode_robot_state: bool = False
+
+    # Frozen-VLM image/point adapter mode. This keeps the official SmolVLM
+    # vision/language backbone unchanged and frozen, while the existing point
+    # encoders, point/action fusion and Action Expert remain trainable.
+    vla_adapter_enable: bool = False
+    vla_adapter_freeze_vlm: bool = True
+
+    # Song point-cloud foreground/background conditioning.
+    pointseg_enable: bool = False
+    pointseg_checkpoint_path: str | None = None
+    pointseg_backbone_type: str = "litept"
+    pointseg_grid_size: float = 0.01
+    pointseg_feature_dim: int = 64
+    pointseg_foreground_ratio: float = 0.08
+    pointseg_background_ratio: float = 0.25
+    pointseg_min_foreground_points: int = 512
+    pointseg_min_background_points: int = 512
+    pointseg_aux_loss_weight: float = 0.20
+    pointseg_freeze_batchnorm_stats: bool = False
+    pointseg_use_temporal_priors_as_input: bool = False
+    pointseg_use_pseudo_selection: bool = True
+    point_action_fusion_enable: bool = True
+    point_action_fusion_heads: int = 4
+    point_action_fusion_dropout: float = 0.0
+
+    # Newer training recipes saved these loss/noise controls.  They remain
+    # inert in the legacy model implementation unless explicitly consumed by
+    # a corresponding model branch.
+    action_loss_translation_weight: float = 1.0
+    action_loss_rotation_weight: float = 1.0
+    action_loss_gripper_weight: float = 1.0
+    pose9_action_noise_enable: bool = False
+    pose9_action_noise_trans_scale: float = 0.15
+    pose9_action_noise_rot_scale: float = 0.35
+    pose9_action_noise_gripper_scale: float = 0.05
+
+    # World-frame trajectory auxiliary supervision.
+    worldflow_enable: bool = False
+    worldflow_feature_dim: int = 64
+    worldflow_grid_size: float = 0.01
+    worldflow_loss_weight: float = 0.05
+    worldflow_geo_loss_weight: float = 0.05
+    worldflow_bridge_loss_weight: float = 0.05
+    worldflow_trans_weight: float = 1.0
+    worldflow_rot_weight: float = 1.0
+    worldflow_se3_head_enable: bool = False
+    worldflow_equiv_loss_weight: float = 0.02
+    worldflow_max_points: int = 2048
+    worldflow_require_action_target_sidecar: bool = False
+    worldflow_action_expert_layers: int = -1
+    worldflow_action_expert_dropout: float = 0.0
+    worldflow_noise_trans_scale: float = 0.15
+    worldflow_noise_rot_scale: float = 0.2
+    worldflow_noise_coupling: str = "independent"
+    worldflow_augmentation_trans_scale: float = 0.2
+    worldflow_augmentation_rot_scale: float = 0.75
+    worldflow_min_transport_points: int = 3
+    worldflow_transport_score_threshold: float = 0.05
+    worldflow_pretrained_lr_multiplier: float = 1.0
+    worldflow_new_lr_multiplier: float = 1.0
+    worldflow_residual_lr_multiplier: float | None = None
+    worldflow_bootstrap_from_ego: bool = False
+    worldflow_ego_residual_gate_init: float | None = None
+    worldflow_frame_origin: str = "global"
+    worldflow_action_fusion: str = "cross_attention"
+
+    # ET-SEED-style SE(3) action generation.
+    se3_enable: bool = False
+    se3_twist_head_mode: str = "direct_twist"
+    se3_noise_trans_scale: float = 0.15
+    se3_noise_rot_scale: float = 0.75
+    se3_noise_gripper_scale: float = 0.05
+    se3_pose_loss_weight: float = 1.0
+    se3_gripper_loss_weight: float = 1.0
+    se3_endpoint_loss_weight: float = 0.25
+    se3_final_correction_enable: bool = False
+    se3_final_correction_loss_weight: float = 0.20
+    se3_equivariance_loss_weight: float = 0.02
+
+    # Training presets
+    optimizer_lr: float = 1e-4
+    optimizer_betas: tuple[float, float] = (0.9, 0.95)
+    optimizer_eps: float = 1e-8
+    optimizer_weight_decay: float = 1e-10
+    optimizer_grad_clip_norm: float = 10
+
+    scheduler_warmup_steps: int = 100 #1_000
+    scheduler_decay_steps: int = 60_000 #30_000
+    scheduler_decay_lr: float = 2.5e-6
+
+    vlm_model_name: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"  # Select the VLM backbone.
+    # Optional raw SmolVLM directory/repository or SmolVLA policy checkpoint
+    # used only as the source of the VLM weights. `vlm_model_name` remains the
+    # source of the architecture and processor when a policy checkpoint is used.
+    vlm_weights_path: str | None = None
+    load_vlm_weights: bool = False  # Set to False in case of training the expert from scratch. True when init from pretrained SmolVLA weights
+    load_action_expert_weights: bool = False
+    action_expert_weights_path: str | None = None
+    load_action_expert_projection_weights: bool = False
+
+    add_image_special_tokens: bool = False  # Whether to use special image tokens around image features.
+
+    attention_mode: str = "cross_attn"
+
+    prefix_length: int = -1
+
+    pad_language_to: str = "longest"  # "max_length"
+
+    num_expert_layers: int = -1  # Less or equal to 0 is the default where the action expert has the same number of layers of VLM. Otherwise the expert have less layers.
+    num_vlm_layers: int = 16  # Number of layers used in the VLM (first num_vlm_layers layers)
+    self_attn_every_n_layers: int = 2  # Interleave SA layers each self_attn_every_n_layers
+    expert_width_multiplier: float = 0.75  # The action expert hidden size (wrt to the VLM)
+
+    min_period: float = 4e-3  # sensitivity range for the timestep used in sine-cosine positional encoding
+    max_period: float = 4.0
+
+    # Real-Time Chunking (RTC) configuration
+    rtc_config: RTCConfig | None = None
+
+    compile_model: bool = False  # Whether to use torch.compile for model optimization
+    compile_mode: str = "max-autotune"  # Torch compile mode
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        """Input validation (not exhaustive)."""
+        if self.n_action_steps > self.chunk_size:
+            raise ValueError(
+                f"The chunk size is the upper bound for the number of action steps per model invocation. Got "
+                f"{self.n_action_steps} for `n_action_steps` and {self.chunk_size} for `chunk_size`."
+            )
+        if self.use_delta_joint_actions_aloha:
+            raise NotImplementedError(
+                "`use_delta_joint_actions_aloha` is used by smolvla for aloha real models. It is not ported yet in LeRobot."
+            )
+        if self.se3_enable:
+            action_norm = self.normalization_mapping.get("ACTION")
+            if action_norm is not NormalizationMode.IDENTITY:
+                raise ValueError("se3_enable=True requires ACTION normalization to be IDENTITY.")
+            if self.rtc_config is not None and self.rtc_config.enabled:
+                raise ValueError("se3_enable=True is not supported with RTC enabled in v1.")
+        if self.worldflow_se3_head_enable:
+            warnings.warn(
+                "worldflow_se3_head_enable is kept only for CLI compatibility and is ignored. "
+                "World-Ego now uses dense automatic ObjectFlow + weighted Kabsch, not a PCA canonical SE(3) head.",
+                stacklevel=2,
+            )
+        if self.se3_final_correction_enable:
+            warnings.warn(
+                "se3_final_correction_enable is kept only for CLI compatibility and is ignored. "
+                "The PCA-style final correction branch has been removed from the active policy path.",
+                stacklevel=2,
+            )
+        if self.vla_adapter_enable and not self.load_vlm_weights:
+            warnings.warn(
+                "vla_adapter_enable=True requires pretrained VLM weights; "
+                "overriding load_vlm_weights=True.",
+                stacklevel=2,
+            )
+            self.load_vlm_weights = True
+        if self.vla_adapter_enable and self.vla_adapter_freeze_vlm:
+            if not self.train_expert_only:
+                warnings.warn(
+                    "vla_adapter_enable=True with vla_adapter_freeze_vlm=True freezes the VLM; "
+                    "overriding train_expert_only=True.",
+                    stacklevel=2,
+                )
+                self.train_expert_only = True
+            self.freeze_vision_encoder = True
+
+    def validate_features(self) -> None:
+        for i in range(self.empty_cameras):
+            key = f"{OBS_IMAGES}.empty_camera_{i}"
+            empty_camera = PolicyFeature(
+                type=FeatureType.VISUAL,
+                shape=(3, 480, 640),
+            )
+            self.input_features[key] = empty_camera
+
+    def get_optimizer_preset(self) -> AdamWConfig:
+        return AdamWConfig(
+            lr=self.optimizer_lr,
+            betas=self.optimizer_betas,
+            eps=self.optimizer_eps,
+            weight_decay=self.optimizer_weight_decay,
+            grad_clip_norm=self.optimizer_grad_clip_norm,
+        )
+
+    def get_scheduler_preset(self):
+        return CosineDecayWithWarmupSchedulerConfig(
+            peak_lr=self.optimizer_lr,
+            decay_lr=self.scheduler_decay_lr,
+            num_warmup_steps=self.scheduler_warmup_steps,
+            num_decay_steps=self.scheduler_decay_steps,
+        )
+
+    @property
+    def observation_delta_indices(self) -> list:
+        return [0]
+
+    @property
+    def action_delta_indices(self) -> list:
+        return list(range(self.chunk_size))
+
+    @property
+    def reward_delta_indices(self) -> None:
+        return None

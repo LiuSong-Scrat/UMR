@@ -1,0 +1,65 @@
+{
+  "created_unix_s": 1787283222.4065144,
+  "status": "completed",
+  "suites": {
+    "libero_spatial": {
+      "suite": "libero_spatial",
+      "status": "completed",
+      "expected_task_count": 10,
+      "expected_episode_count": 500,
+      "completed_episode_count": 500,
+      "success_count": 492,
+      "failure_count": 8,
+      "completion_rate": 1.0,
+      "success_rate": 0.984,
+      "progress_path": "/home/liusong/ProgramFiles/Huggingface/lerobot/benchmarks/song_real_libero/outputs/libero_setting/eval_temp_wep_vla_v043_multiview_doubleflow_finetune_4G_60k_after30k_after30k_libero_FULL_3/libero_spatial/progress.json",
+      "error": null
+    },
+    "libero_object": {
+      "suite": "libero_object",
+      "status": "completed",
+      "expected_task_count": 10,
+      "expected_episode_count": 500,
+      "completed_episode_count": 500,
+      "success_count": 499,
+      "failure_count": 1,
+      "completion_rate": 1.0,
+      "success_rate": 0.998,
+      "progress_path": "/home/liusong/ProgramFiles/Huggingface/lerobot/benchmarks/song_real_libero/outputs/libero_setting/eval_temp_wep_vla_v043_multiview_doubleflow_finetune_4G_60k_after30k_after30k_libero_FULL_3/libero_object/progress.json",
+      "error": null
+    },
+    "libero_10": {
+      "suite": "libero_10",
+      "status": "completed",
+      "expected_task_count": 10,
+      "expected_episode_count": 500,
+      "completed_episode_count": 500,
+      "success_count": 484,
+      "failure_count": 16,
+      "completion_rate": 1.0,
+      "success_rate": 0.968,
+      "progress_path": "/home/liusong/ProgramFiles/Huggingface/lerobot/benchmarks/song_real_libero/outputs/libero_setting/eval_temp_wep_vla_v043_multiview_doubleflow_finetune_4G_60k_after30k_after30k_libero_FULL_3/libero_10/progress.json",
+      "error": null
+    },
+    "libero_goal": {
+      "suite": "libero_goal",
+      "status": "completed",
+      "expected_task_count": 10,
+      "expected_episode_count": 500,
+      "completed_episode_count": 500,
+      "success_count": 475,
+      "failure_count": 25,
+      "completion_rate": 1.0,
+      "success_rate": 0.95,
+      "progress_path": "/home/liusong/ProgramFiles/Huggingface/lerobot/benchmarks/song_real_libero/outputs/libero_setting/eval_temp_wep_vla_v043_multiview_doubleflow_finetune_4G_60k_after30k_after30k_libero_FULL_3/libero_goal/progress.json",
+      "error": null
+    }
+  },
+  "updated_unix_s": 1787286766.6502473,
+  "expected_episode_count": 2000,
+  "completed_episode_count": 2000,
+  "success_count": 1950,
+  "failure_count": 50,
+  "completion_rate": 1.0,
+  "success_rate": 0.975
+}

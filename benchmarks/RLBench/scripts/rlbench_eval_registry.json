@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "description": "Portable public evaluation profile. Set EVAL_POLICY_PATH before use.",
+  "defaults": {
+    "env": {
+      "EVAL_SAVE_VIDEO": "0",
+      "EVAL_SAVE_ACTION_VISUALIZATIONS": "0",
+      "EVAL_SAVE_ACTION_RECORDS": "0",
+      "EVAL_SAVE_CONTROL_LOG": "0"
+    },
+    "args": [
+      "--variation", "0",
+      "--seed", "100",
+      "--model-noise-seed", "20260801",
+      "--num-points", "20000",
+      "--gripper-points", "500",
+      "--gripper-template", "reap",
+      "--gripper-len", "0.11",
+      "--add-gripper-cloud",
+      "--max-model-calls", "20",
+      "--exec-action-steps", "28",
+      "--planner-max-time-ms", "50",
+      "--execution-mode", "dataset_step",
+      "--arm-action-mode", "planning",
+      "--gripper-mode", "delta_width_initial_sync",
+      "--gripper-delta-threshold", "0.003",
+      "--gripper-delta-open-threshold", "0.0025",
+      "--gripper-delta-close-threshold", "0.003",
+      "--gripper-delta-alignment", "current_minus_previous",
+      "--gripper-open-threshold", "0.04",
+      "--no-gripper-lock-after-close",
+      "--no-collision-checking",
+      "--image-size", "256",
+      "--failure-artifacts-only",
+      "--no-save-action-chunks",
+      "--controller-continue-max-errors", "200",
+      "--mover-max-tries", "5",
+      "--mover-position-tolerance", "0.001",
+      "--mover-rotation-tolerance", "0.05491",
+      "--mover-gripper-position-tolerance", "0.001",
+      "--mover-gripper-rotation-tolerance", "0.05491"
+    ]
+  },
+  "checkpoints": {
+    "custom": {
+      "training_setting": "custom",
+      "description": "Use the policy directory supplied through EVAL_POLICY_PATH.",
+      "policy_path": "${EVAL_POLICY_PATH}",
+      "tasks": {
+        "close_box": {},
+        "close_fridge": {},
+        "close_laptop_lid": {},
+        "phone_on_base": {},
+        "stack_wine": {},
+        "sweep_to_dustpan": {},
+        "take_frame_off_hanger": {},
+        "take_umbrella_out_of_umbrella_stand": {},
+        "toilet_seat_down": {},
+        "water_plants": {}
+      }
+    }
+  }
+}

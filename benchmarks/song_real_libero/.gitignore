@@ -1,0 +1,6 @@
+data/
+outputs/
+*.log
+*.tmp
+__pycache__/
+.pytest_cache/

@@ -1,0 +1,89 @@
+{
+  "experiment_id": "wep_vla_v043_dualview_baseline_guard_20260811",
+  "experiment_root": "/opt/data/private/liusong/benchmarks/song_real_libero/data/libero_setting/wep_vla_v042_general_dataset_multiview/runs/wep_vla_v043_dualview_baseline_guard_20260811",
+  "source_dataset_root": "/opt/data/private/liusong/benchmarks/song_real_libero/data/libero_setting/wep_vla_v042_general_dataset_multiview/libero_4suite_lerobot_dataset",
+  "vlm_model": "/opt/data/private/liusong/hf_models/SmolVLM2-500M-Video-Instruct",
+  "vlm_weights": "/opt/data/private/liusong/hf_models/smolvla_base",
+  "python": "/home/liusong/anaconda3/envs/reap/bin/python3.10",
+  "torchrun": "/home/liusong/anaconda3/envs/reap/bin/torchrun",
+  "code_base_commit": "7b22dda",
+  "geometry_audit": {
+    "artifact": "/opt/data/private/liusong/benchmarks/song_real_libero/data/libero_setting/wep_vla_v042_general_dataset_multiview/runs/wep_vla_v043_dualview_baseline_guard_20260811/artifacts/multiview_geometry_audit_20260811.json",
+    "episodes_sampled": 12,
+    "frames_sampled": 36,
+    "wrist_to_agent_median_distance_m": 0.006100525914900114,
+    "agent_to_wrist_median_distance_m": 0.1689903023050228,
+    "geometry_only_candidate_primary_to_wrist_budget": [9.0, 1.0],
+    "note": "Historical weighted-budget probe only. User rejected ratio weighting as non-general; active method uses the equal scene union followed by FPS."
+  },
+  "runtime_gate_artifact": "/opt/data/private/liusong/benchmarks/song_real_libero/data/libero_setting/wep_vla_v042_general_dataset_multiview/runs/wep_vla_v043_dualview_baseline_guard_20260811/artifacts/resource_and_drift_gate_20260811.json",
+  "validation_artifact": "/opt/data/private/liusong/benchmarks/song_real_libero/data/libero_setting/wep_vla_v042_general_dataset_multiview/runs/wep_vla_v043_dualview_baseline_guard_20260811/artifacts/validation_20260811.json",
+  "action_drift_gate": {
+    "status": "rejected_historical_artifact_not_a_stage1_gate",
+    "rejected_9to1_report": "/opt/data/private/liusong/benchmarks/song_real_libero/data/libero_setting/wep_vla_v042_general_dataset_multiview/runs/wep_vla_v043_dualview_baseline_guard_20260811/artifacts/baseline_vs_9to1_action_drift.json",
+    "ratio_sweep_report": "/opt/data/private/liusong/benchmarks/song_real_libero/data/libero_setting/wep_vla_v042_general_dataset_multiview/runs/wep_vla_v043_dualview_baseline_guard_20260811/artifacts/dualview_ratio_sweep.json",
+    "samples": 8,
+    "exec_steps": 24,
+    "agentview_repeat_translation_mean_m": 0.001595085886947345,
+    "agentview_repeat_translation_p95_m": 0.004739252477884292,
+    "selected_camera_view_weights": [99.0, 1.0],
+    "selected_scene_point_allocations": [9405, 95],
+    "selected_excess_translation_mean_m": 0.0007192275051769079,
+    "selected_excess_translation_p95_m": 0.0006660680286586264,
+    "rejected_camera_view_weights": [[9.0, 1.0], [19.0, 1.0], [49.0, 1.0], [99.0, 1.0]],
+    "required_before_stage1_training": false
+  },
+  "baseline": {
+    "checkpoint": "/opt/data/private/liusong/benchmarks/song_real_libero/outputs/wep_vla_v042_general_dataset_toolseg_after32k_mul3_after28k_lr5/checkpoints/030000/pretrained_model",
+    "model_sha256": "d767e87cdec07618c7ea7999ddd8c2951cd857b8123c7b93aa9565fcf4528c0e",
+    "evaluation": "/opt/data/private/liusong/benchmarks/song_real_libero/outputs/libero_setting/EVAL_TEST/V042GeneralDatasetToolSeg/eval_FULL4-9705*",
+    "episodes": 2000,
+    "successes": 1941,
+    "success_rate": 0.9705,
+    "suite_successes": {
+      "libero_spatial": "486/500",
+      "libero_object": "496/500",
+      "libero_goal": "478/500",
+      "libero_10": "481/500"
+    },
+    "evaluation_contract": {
+      "strict_official_init": true,
+      "control_freq": 20,
+      "max_steps": 1000,
+      "action_index": 0,
+      "exec_action_steps": 24,
+      "inference_batch_size": 80,
+      "policy_noise_seed": 0,
+      "env_seed": 7
+    }
+  },
+  "stage_1_dual_view": {
+    "output_dir": "/opt/data/private/liusong/benchmarks/song_real_libero/data/libero_setting/wep_vla_v042_general_dataset_multiview/runs/wep_vla_v043_dualview_baseline_guard_20260811/training/stage1_dualview_fps_union",
+    "camera_views": [
+      "agentview",
+      "robot0_eye_in_hand"
+    ],
+    "rgb_camera_views": [
+      "agentview"
+    ],
+    "camera_view_fusion": "fps",
+    "camera_view_weights": null,
+    "input_scene_union_points": 19000,
+    "fps_scene_output_points": 9500,
+    "model_total_points": 10000,
+    "fps_backend": "pointops_cuda",
+    "gripper_points": 500,
+    "worldflow_enable": false,
+    "se3_enable": false
+  },
+  "stage_2_worldflow": {
+    "output_dir": "/opt/data/private/liusong/benchmarks/song_real_libero/data/libero_setting/wep_vla_v042_general_dataset_multiview/runs/wep_vla_v043_dualview_baseline_guard_20260811/training/stage2_worldflow_guarded",
+    "requires_stage_1_checkpoint": true,
+    "worldflow_enable": true,
+    "worldflow_ego_residual_gate_init": null,
+    "pose9_action_noise_enable": false,
+    "worldflow_noise_coupling": "independent",
+    "se3_enable": false,
+    "worldflow_require_action_target_sidecar": true
+  }
+}

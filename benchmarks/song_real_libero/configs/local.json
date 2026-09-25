@@ -1,0 +1,85 @@
+{
+  "roots": {
+    "bestman": "/home/liusong/ProgramFiles/BestMan",
+    "reap": "/home/liusong/ProgramFiles/REAP",
+    "lerobot": "/home/liusong/ProgramFiles/Huggingface/lerobot"
+  },
+  "paths": {
+    "bestman_config": "/home/liusong/ProgramFiles/BestMan/Config/default_franka3.yaml",
+    "vlm_model": "/home/liusong/SmolVLM2-500M-Video-Instruct",
+    "policy_checkpoint": "/home/liusong/ProgramFiles/Huggingface/lerobot/outputs/train/ep_vla/checkpoints/last/pretrained_model",
+    "raw_rgbd_dir": "data/real_setting/raw_rgbd/session_default",
+    "raw_hdf5_dir": "data/real_setting/hdf5_raw",
+    "with_gripper_hdf5_dir": "data/real_setting/hdf5_with_gripper",
+    "clean_hdf5_dir": "data/real_setting/hdf5_clean",
+    "lerobot_dataset": "data/real_setting/lerobot_dataset",
+    "pointseg_cache": "data/real_setting/pointseg_cache",
+    "train_output": "outputs/real_setting/train",
+    "infer_output": "outputs/real_setting/infer"
+  },
+  "task": "Place the Red Cube on the Blue Cube",
+  "collect": {
+    "camera": "overhead",
+    "storage": "compressed",
+    "warmup_frames": 10,
+    "num_frames": 0,
+    "duration_s": 0.0,
+    "show": false
+  },
+  "hdf5": {
+    "camera_names": "overhead,hand",
+    "max_points": 10000,
+    "pose_frame": "camera",
+    "segments": "",
+    "no_interactive": false,
+    "run_inference": false
+  },
+  "gripper": {
+    "gripper_points": 500,
+    "drop_strategy": "tail",
+    "num_workers": 4,
+    "overwrite": true
+  },
+  "check": {
+    "threshold": 0.3,
+    "mode": "copy",
+    "overwrite": true
+  },
+  "convert": {
+    "fps": 30,
+    "workers": 4,
+    "repo_id": "song_real_libero_local",
+    "point_cloud_key": "observations/cloud_rgb/overhead",
+    "num_points": 10000,
+    "gripper_points": 500,
+    "point_cloud_storage": "zarr"
+  },
+  "cache": {
+    "current_points": 10000,
+    "future_points": 10000,
+    "batch_size": 2,
+    "num_workers": 4,
+    "nn_chunk_size": 512,
+    "shard_size": 256,
+    "storage_dtype": "float16"
+  },
+  "train": {
+    "mode": "resume",
+    "batch_size": 8,
+    "steps": 500000,
+    "log_freq": 1,
+    "save_freq": 10000,
+    "eval_freq": 1000,
+    "num_workers": 8,
+    "job_name": "song_real_libero_pointseg",
+    "device": "cuda",
+    "wandb_enable": true
+  },
+  "infer": {
+    "obs_path": "",
+    "ply_path": "",
+    "num_points": 10000,
+    "device": "cuda",
+    "visualize": false
+  }
+}
