@@ -1,159 +1,245 @@
-<p align="center">
-  <img alt="LeRobot, Hugging Face Robotics Library" src="./media/readme/lerobot-logo-thumbnail.png" width="100%">
-</p>
 
-<div align="center">
+# UMR: Universal Manipulation Representation
 
-[![Tests](https://github.com/huggingface/lerobot/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/huggingface/lerobot/actions/workflows/nightly.yml?query=branch%3Amain)
-[![Python versions](https://img.shields.io/pypi/pyversions/lerobot)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/huggingface/lerobot/blob/main/LICENSE)
-[![Status](https://img.shields.io/pypi/status/lerobot)](https://pypi.org/project/lerobot/)
-[![Version](https://img.shields.io/pypi/v/lerobot)](https://pypi.org/project/lerobot/)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.1-ff69b4.svg)](https://github.com/huggingface/lerobot/blob/main/CODE_OF_CONDUCT.md)
-[![Discord](https://img.shields.io/badge/Discord-Join_Us-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/q8Dzzpym3f)
+## Installation
 
-</div>
+### System dependencies
 
-**LeRobot** aims to provide models, datasets, and tools for real-world robotics in PyTorch. The goal is to lower the barrier to entry so that everyone can contribute to and benefit from shared datasets and pretrained models.
+```bash
+sudo apt-get update
+sudo apt-get install -y git git-lfs tmux xvfb xauth libegl1 libgl1-mesa-glx
+git lfs install
+```
 
-🤗 A hardware-agnostic, Python-native interface that standardizes control across diverse platforms, from low-cost arms (SO-100) to humanoids.
+### Python environment
 
-🤗 A standardized, scalable LeRobotDataset format (Parquet + MP4 or images) hosted on the Hugging Face Hub, enabling efficient storage, streaming and visualization of massive robotic datasets.
+```bash
+cd /path/to/lerobot
+conda create -n wepvla python=3.10 -y
+conda activate wepvla
+pip install -e ".[smolvla,libero]"
+```
 
-🤗 State-of-the-art policies that have been shown to transfer to the real-world ready for training and deployment.
+For the bundled RLBench implementation:
 
-🤗 Comprehensive support for the open-source ecosystem to democratize physical AI.
+```bash
+pip install -e benchmarks/RLBench
+python -c "import pyrep, rlbench; print('RLBench import ok')"
+```
+
+Verify the runtime before starting an experiment:
+
+```bash
+python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.device_count())"
+nvidia-smi
+```
+
+The repository also includes dependency records in `benchmarks/requirements.txt` and
+`benchmarks/environment-rlbench.yml`. CUDA extensions must be rebuilt for the target machine's
+PyTorch and CUDA versions; exported local paths are not portable installation instructions.
+
+## Model Resources
+
+The experiments use two local resources:
+
+- `SmolVLM2-500M-Video-Instruct`: VLM architecture, tokenizer, and processor;
+- `smolvla_base`: pretrained SmolVLA weights.
+
+Download them with:
+
+```bash
+bash benchmarks/RLBench/scripts/download_vlm_models.sh
+```
+
+The expected layout is:
+
+```text
+benchmarks/vlm_model/
+├── SmolVLM2-500M-Video-Instruct/
+└── smolvla_base/
+```
+
+For offline runs, pass the model paths directly to the command that needs them, for example:
+
+```bash
+VLM_MODEL_NAME=/path/to/SmolVLM2-500M-Video-Instruct \
+VLM_WEIGHTS_PATH=/path/to/smolvla_base \
+PYTHON=python \
+bash benchmarks/RLBench/scripts/collect_data.sh \
+  --dataset-root /path/to/rlbench_dataset
+```
 
 ## Quick Start
 
-LeRobot can be installed directly from PyPI.
+All commands below are run from the repository root.
+
+### RLBench
+
+RLBench requires a compatible CoppeliaSim installation. Download it from
+<https://www.coppeliarobotics.com/downloads> and pass its path to each command:
 
 ```bash
-pip install lerobot
-lerobot-info
+COPPELIASIM_ROOT=/path/to/CoppeliaSim \
+LD_LIBRARY_PATH="/path/to/CoppeliaSim:${LD_LIBRARY_PATH:-}" \
+QT_QPA_PLATFORM=xcb \
+QT_QPA_PLATFORM_PLUGIN_PATH=/path/to/CoppeliaSim \
+QT_PLUGIN_PATH="" \
+bash benchmarks/RLBench/scripts/evaluate.sh --help
 ```
 
-> [!IMPORTANT]
-> For detailed installation guide, please see the [Installation Documentation](https://huggingface.co/docs/lerobot/installation).
-
-## Robots & Control
-
-<div align="center">
-  <img src="./media/readme/robots_control_video.webp" width="640px" alt="Reachy 2 Demo">
-</div>
-
-LeRobot provides a unified `Robot` class interface that decouples control logic from hardware specifics. It supports a wide range of robots and teleoperation devices.
-
-```python
-from lerobot.robots.myrobot import MyRobot
-
-# Connect to a robot
-robot = MyRobot(config=...)
-robot.connect()
-
-# Read observation and send action
-obs = robot.get_observation()
-action = model.select_action(obs)
-robot.send_action(action)
-```
-
-**Supported Hardware:** SO100, LeKiwi, Koch, HopeJR, OMX, EarthRover, Reachy2, Gamepads, Keyboards, Phones, OpenARM, Unitree G1.
-
-While these devices are natively integrated into the LeRobot codebase, the library is designed to be extensible. You can easily implement the Robot interface to utilize LeRobot's data collection, training, and visualization tools for your own custom robot.
-
-For detailed hardware setup guides, see the [Hardware Documentation](https://huggingface.co/docs/lerobot/integrate_hardware).
-
-## LeRobot Dataset
-
-To solve the data fragmentation problem in robotics, we utilize the **LeRobotDataset** format.
-
-- **Structure:** Synchronized MP4 videos (or images) for vision and Parquet files for state/action data.
-- **HF Hub Integration:** Explore thousands of robotics datasets on the [Hugging Face Hub](https://huggingface.co/lerobot).
-- **Tools:** Seamlessly delete episodes, split by indices/fractions, add/remove features, and merge multiple datasets.
-
-```python
-from lerobot.datasets.lerobot_dataset import LeRobotDataset
-
-# Load a dataset from the Hub
-dataset = LeRobotDataset("lerobot/aloha_mobile_cabinet")
-
-# Access data (automatically handles video decoding)
-episode_index=0
-print(f"{dataset[episode_index]['action'].shape=}\n")
-```
-
-Learn more about it in the [LeRobotDataset Documentation](https://huggingface.co/docs/lerobot/lerobot-dataset-v3)
-
-## SoTA Models
-
-LeRobot implements state-of-the-art policies in pure PyTorch, covering Imitation Learning, Reinforcement Learning, and Vision-Language-Action (VLA) models, with more coming soon. It also provides you with the tools to instrument and inspect your training process.
-
-<p align="center">
-  <img alt="Gr00t Architecture" src="./media/readme/VLA_architecture.jpg" width="640px">
-</p>
-
-Training a policy is as simple as running a script configuration:
+On a headless server:
 
 ```bash
-lerobot-train \
-  --policy=act \
-  --dataset.repo_id=lerobot/aloha_mobile_cabinet
+Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp >/tmp/rlbench-xvfb.log 2>&1 &
 ```
 
-| Category                   | Models                                                                                                                                                                                                       |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Imitation Learning**     | [ACT](./docs/source/policy_act_README.md), [Diffusion](./docs/source/policy_diffusion_README.md), [VQ-BeT](./docs/source/policy_vqbet_README.md)                                                             |
-| **Reinforcement Learning** | [HIL-SERL](./docs/source/hilserl.mdx), [TDMPC](./docs/source/policy_tdmpc_README.md) & QC-FQL (coming soon)                                                                                                  |
-| **VLAs Models**            | [Pi0Fast](./docs/source/pi0fast.mdx), [Pi0.5](./docs/source/pi05.mdx), [GR00T N1.5](./docs/source/policy_groot_README.md), [SmolVLA](./docs/source/policy_smolvla_README.md), [XVLA](./docs/source/xvla.mdx) |
-
-Similarly to the hardware, you can easily implement your own policy & leverage LeRobot's data collection, training, and visualization tools, and share your model to the HF Hub
-
-For detailed policy setup guides, see the [Policy Documentation](https://huggingface.co/docs/lerobot/bring_your_own_policies).
-
-## Inference & Evaluation
-
-Evaluate your policies in simulation or on real hardware using the unified evaluation script. LeRobot supports standard benchmarks like **LIBERO**, **MetaWorld** and more to come.
+#### 1. Collect data and build cache
 
 ```bash
-# Evaluate a policy on the LIBERO benchmark
-lerobot-eval \
-  --policy.path=lerobot/pi0_libero_finetuned \
-  --env.type=libero \
-  --env.task=libero_object \
-  --eval.n_episodes=10
+PYTHON=python \
+DATASET_ROOT=/path/to/rlbench_dataset \
+COPPELIASIM_ROOT=/path/to/CoppeliaSim \
+LD_LIBRARY_PATH="/path/to/CoppeliaSim:${LD_LIBRARY_PATH:-}" \
+QT_QPA_PLATFORM=xcb \
+QT_QPA_PLATFORM_PLUGIN_PATH=/path/to/CoppeliaSim \
+QT_PLUGIN_PATH="" \
+bash benchmarks/RLBench/scripts/collect_data.sh \
+  --dataset-root /path/to/rlbench_dataset
 ```
 
-Learn how to implement your own simulation environment or benchmark and distribute it from the HF Hub by following the [EnvHub Documentation](https://huggingface.co/docs/lerobot/envhub)
+The collection flow writes the LeRobot dataset and the PointSeg cache. To rebuild only the cache,
+use the cache utility under `benchmarks/RLBench/scripts/tools/`.
 
-## Resources
+#### 2. Train
 
-- **[Documentation](https://huggingface.co/docs/lerobot/index):** The complete guide to tutorials & API.
-- **[Chinese Tutorials: LeRobot+SO-ARM101中文教程-同济子豪兄](https://zihao-ai.feishu.cn/wiki/space/7589642043471924447)** Detailed doc for assembling, teleoperate, dataset, train, deploy. Verified by Seed Studio and 5 global hackathon players.
-- **[Discord](https://discord.gg/q8Dzzpym3f):** Join the `LeRobot` server to discuss with the community.
-- **[X](https://x.com/LeRobotHF):** Follow us on X to stay up-to-date with the latest developments.
-- **[Robot Learning Tutorial](https://huggingface.co/spaces/lerobot/robot-learning-tutorial):** A free, hands-on course to learn robot learning using LeRobot.
+```bash
+DATASET_ROOT=/path/to/rlbench_dataset \
+OUTPUT_ROOT=/path/to/rlbench_output \
+GPU_IDS=0 \
+bash benchmarks/RLBench/scripts/train.sh
+```
+
+#### 3. Evaluate
+
+```bash
+EVAL_POLICY_PATH=/path/to/checkpoint/pretrained_model \
+EVAL_ROOT=/path/to/rlbench_eval \
+EVAL_SAVE_VIDEO=0 \
+EVAL_SAVE_ACTION_RECORDS=0 \
+EVAL_SAVE_ACTION_CHUNKS=0 \
+DISPLAY=:99 \
+bash benchmarks/RLBench/scripts/evaluate.sh \
+  --tasks close_box close_fridge close_laptop_lid phone_on_base stack_wine \
+  sweep_to_dustpan take_frame_off_hanger \
+  take_umbrella_out_of_umbrella_stand toilet_seat_down water_plants \
+  --episodes 100
+```
+
+Use tmux for long-running evaluations:
+
+```bash
+tmux new -d -s rlbench_eval \
+  "DISPLAY=:99 bash benchmarks/RLBench/scripts/evaluate.sh --episodes 100"
+```
+
+### LIBERO
+
+The four LIBERO entry points are under `benchmarks/song_real_libero/`.
+
+#### 1. Convert demonstrations
+
+```bash
+PYTHON_BIN=/path/to/python \
+DEMO_ROOT=/path/to/libero_demos \
+DATASET_ROOT=/path/to/libero_dataset \
+bash benchmarks/song_real_libero/prepare_dataset.sh
+```
+
+#### 2. Build PointSeg cache
+
+```bash
+PYTHON_BIN=/path/to/python \
+DATASET_ROOT=/path/to/libero_dataset \
+CACHE_ROOT=/path/to/libero_cache \
+GPU_IDS=0 NPROC=1 \
+bash benchmarks/song_real_libero/build_cache.sh
+```
+
+#### 3. Train
+
+```bash
+PYTHON_BIN=/path/to/python \
+DATASET_ROOT=/path/to/libero_dataset \
+CACHE_ROOT=/path/to/libero_cache \
+BASE_POLICY=/path/to/base_policy/pretrained_model \
+OUTPUT_ROOT=/path/to/libero_output \
+GPU_IDS=0 \
+bash benchmarks/song_real_libero/train.sh
+```
+
+#### 4. Evaluate all suites
+
+```bash
+PYTHON_BIN=/path/to/python \
+POLICY_PATH=/path/to/checkpoint/pretrained_model \
+OUTPUT_DIR="benchmarks/song_real_libero/outputs/eval_$(date +%Y%m%d_%H%M%S)" \
+CUDA_DEVICE=0 EPISODES=50 \
+bash benchmarks/song_real_libero/evaluate.sh
+```
+
+The default LIBERO evaluator uses two task workers, one episode shard per worker, and
+`inference-batch-size=2`. Every run requires a new output directory and refuses to overwrite an
+existing result.
+
+## Benchmark Results
+
+The following numbers are completed, reproducible subsets from the current evaluation protocol.
+They should not be interpreted as a full-suite score unless every task and episode is complete.
+
+| Benchmark subset           | Episodes | Success rate |
+| :------------------------- | -------: | -----------: |
+| RLBench, 6 completed tasks |      600 |   **92.33%** |
+| LIBERO spatial             |      500 |   **98.20%** |
+| LIBERO object              |      500 |   **99.60%** |
+
+The remaining suite and task-level results are written to each run's `summary.json` and
+`progress.json`.
+
+## Data and Coordinate Conventions
+
+- Point clouds are stored as XYZRGB with XYZ in meters and RGB in `[0, 255]`.
+- Point clouds and actions use the current EEF coordinate frame.
+- Actions use `xyz + rotation-6D + gripper`.
+- PointSeg caches are tied to dataset point order, sampling, camera views, and coordinate frames.
+  Regenerate the cache whenever any of these change.
+
+## Troubleshooting
+
+**GPU index errors**: run `nvidia-smi` and use only GPU IDs visible in the current environment.
+
+**RLBench cannot start**: check `COPPELIASIM_ROOT`, `LD_LIBRARY_PATH`, `DISPLAY`, Xvfb, PyRep,
+and the CoppeliaSim version.
+
+**Existing output directory**: choose a new `OUTPUT_DIR`, `OUTPUT_ROOT`, or `EVAL_ROOT`.
+
+**NVIDIA driver/NVML mismatch**: this is a system-level driver problem. On a shared server, do not
+reload or uninstall NVIDIA kernel modules while other users may be using the GPU.
+
+## Additional Documentation
+
+- [RLBench script guide](RLBench/scripts/README.md)
+- [LIBERO implementation notes](song_real_libero/README.md)
+- [LIBERO experiment protocol](song_real_libero/WEPVLA_V043_DoubleFLow.md)
 
 ## Citation
 
-If you use LeRobot in your research, please cite:
+If you use this codebase, please cite the underlying LeRobot and SmolVLA work together with your
+project-specific WEP-VLA paper or technical report.
 
 ```bibtex
-@misc{cadene2024lerobot,
-    author = {Cadene, Remi and Alibert, Simon and Soare, Alexander and Gallouedec, Quentin and Zouitine, Adil and Palma, Steven and Kooijmans, Pepijn and Aractingi, Michel and Shukor, Mustafa and Aubakirova, Dana and Russi, Martino and Capuano, Francesco and Pascal, Caroline and Choghari, Jade and Moss, Jess and Wolf, Thomas},
-    title = {LeRobot: State-of-the-art Machine Learning for Real-World Robotics in Pytorch},
-    howpublished = "\url{https://github.com/huggingface/lerobot}",
-    year = {2024}
+@misc{wepvla,
+  title  = {WEP-VLA: Geometry-Aware Vision-Language-Action Policies},
+  year   = {2026},
+  note   = {Anonymous submission}
 }
 ```
-
-## Contribute
-
-We welcome contributions from everyone in the community! To get started, please read our [CONTRIBUTING.md](./CONTRIBUTING.md) guide. Whether you're adding a new feature, improving documentation, or fixing a bug, your help and feedback are invaluable. We're incredibly excited about the future of open-source robotics and can't wait to work with you on what's next—thank you for your support!
-
-<p align="center">
-  <img alt="SO101 Video" src="./media/readme/so100_video.webp" width="640px">
-</p>
-
-<div align="center">
-<sub>Built by the <a href="https://huggingface.co/lerobot">LeRobot</a> team at <a href="https://huggingface.co">Hugging Face</a> with ❤️</sub>
-</div>
