@@ -191,46 +191,6 @@ The default LIBERO evaluator uses two task workers, one episode shard per worker
 `inference-batch-size=2`. Every run requires a new output directory and refuses to overwrite an
 existing result.
 
-## Benchmark Results
-
-The following numbers are completed, reproducible subsets from the current evaluation protocol.
-They should not be interpreted as a full-suite score unless every task and episode is complete.
-
-| Benchmark subset           | Episodes | Success rate |
-| :------------------------- | -------: | -----------: |
-| RLBench, 6 completed tasks |      600 |   **92.33%** |
-| LIBERO spatial             |      500 |   **98.20%** |
-| LIBERO object              |      500 |   **99.60%** |
-
-The remaining suite and task-level results are written to each run's `summary.json` and
-`progress.json`.
-
-## Data and Coordinate Conventions
-
-- Point clouds are stored as XYZRGB with XYZ in meters and RGB in `[0, 255]`.
-- Point clouds and actions use the current EEF coordinate frame.
-- Actions use `xyz + rotation-6D + gripper`.
-- PointSeg caches are tied to dataset point order, sampling, camera views, and coordinate frames.
-  Regenerate the cache whenever any of these change.
-
-## Troubleshooting
-
-**GPU index errors**: run `nvidia-smi` and use only GPU IDs visible in the current environment.
-
-**RLBench cannot start**: check `COPPELIASIM_ROOT`, `LD_LIBRARY_PATH`, `DISPLAY`, Xvfb, PyRep,
-and the CoppeliaSim version.
-
-**Existing output directory**: choose a new `OUTPUT_DIR`, `OUTPUT_ROOT`, or `EVAL_ROOT`.
-
-**NVIDIA driver/NVML mismatch**: this is a system-level driver problem. On a shared server, do not
-reload or uninstall NVIDIA kernel modules while other users may be using the GPU.
-
-## Additional Documentation
-
-- [RLBench script guide](RLBench/scripts/README.md)
-- [LIBERO implementation notes](song_real_libero/README.md)
-- [LIBERO experiment protocol](song_real_libero/WEPVLA_V043_DoubleFLow.md)
-
 ## Citation
 
 If you use this codebase, please cite the underlying LeRobot and SmolVLA work together with your
