@@ -193,27 +193,4 @@ existing result.
 
 
 
-## Citation
 
-If you find UMR useful for your research, please consider citing our work:
-
-```bibtex
-@misc{liu2026umr,
-  title  = {UMR: Universal Manipulation Representation},
-  author = {Liu, Song and
-            Li, Linyi and
-            Zhao, Yanshun and
-            Li, Rxuan and
-            Xu, Xinrui and
-            Ju, Yi and
-            Deng, Yahui and
-            Zhang, Senge and
-            Liu, Guoyu and
-            Li, Yixuan and
-            Zhang, Wuyang and
-            Li, Yao and
-            Zhu, Congcong and
-            Chen, Jingrun},
-  year   = {2026}
-}
-```
