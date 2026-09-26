@@ -191,15 +191,29 @@ The default LIBERO evaluator uses two task workers, one episode shard per worker
 `inference-batch-size=2`. Every run requires a new output directory and refuses to overwrite an
 existing result.
 
+
+
 ## Citation
 
-If you use this codebase, please cite the underlying LeRobot and SmolVLA work together with your
-project-specific WEP-VLA paper or technical report.
+If you find UMR useful for your research, please consider citing our work:
 
 ```bibtex
-@misc{wepvla,
-  title  = {WEP-VLA: Geometry-Aware Vision-Language-Action Policies},
-  year   = {2026},
-  note   = {Anonymous submission}
+@misc{liu2026umr,
+  title  = {UMR: Universal Manipulation Representation},
+  author = {Liu, Song and
+            Li, Linyi and
+            Zhao, Yanshun and
+            Li, Rxuan and
+            Xu, Xinrui and
+            Ju, Yi and
+            Deng, Yahui and
+            Zhang, Senge and
+            Liu, Guoyu and
+            Li, Yixuan and
+            Zhang, Wuyang and
+            Li, Yao and
+            Zhu, Congcong and
+            Chen, Jingrun},
+  year   = {2026}
 }
 ```
